@@ -1,6 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-
+#include "serial.h"
 using namespace cv;
 using namespace std;
 
@@ -104,6 +104,7 @@ void linePosition(cv::Mat *p_input_img, cv::Scalar *p_input_lowerb, cv::Scalar *
 int main()
 {
 //    VideoCapture capture(0);
+    SerialPort serial;
     VideoCapture capture("/home/xx/baiduwangpan/VID_20201024_213323.mp4");
     Mat frame;
     int Cross_num = 0;
@@ -176,6 +177,7 @@ int main()
     cv::createTrackbar("S_U", slider_console_name, &input_color.upperb[1], 255, NULL);
     cv::createTrackbar("V_L", slider_console_name, &input_color.lowerb[2], 255, NULL);
     cv::createTrackbar("V_U", slider_console_name, &input_color.upperb[2], 255, NULL);
+    static int16_t serial_num = 0;
     while(1)
     {
         capture.read(frame);
@@ -209,25 +211,23 @@ int main()
 //        cout<<"area_max[1] = "<<area_max[1]<<endl;
 //        cout<<"转弯 = "<<line_dist_R_displacement<<endl;
 
-        if((area_max[0] < area_max[1] ? area_max[0] : area_max[1])  > input_line_data.area_threshold_min)
-        {
-          if(area_max[0] > input_line_data.area_threshold_max && abs(line_dist_R_displacement) < 50)
-          {
-            if(crossing_flag == false)
-            {
-              crossing_flag = true;
-              straight_flag = false;
-              putText(frame, "crossing", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-//              std::cout << "crossing" << ++input_line_data.line_mark_cnt << "->" << area_max[0] << std::endl;
-            }
-          }
-          else
-          {
+//        if((area_max[0] < area_max[1] ? area_max[0] : area_max[1])  > input_line_data.area_threshold_min)
+//        {
+//          if(area_max[0] > input_line_data.area_threshold_max && abs(line_dist_R_displacement) < 50)
+//          {
+//            if(crossing_flag == false)
+//            {
+//              crossing_flag = true;
+//              straight_flag = false;
+//              putText(frame, "crossing", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+////              std::cout << "crossing" << ++input_line_data.line_mark_cnt << "->" << area_max[0] << std::endl;
+//            }
+//          }
+//          else
+//          {
               crossing_flag = false;
               straight_flag = true;
               putText(frame, "straight", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-
-
               if(abs(line_dist_R_displacement) < 60)//不偏转
               {
                 int line_axis_H_displacement = int(line_ctr[1].x - input_line_data.line_axis_H);
@@ -236,25 +236,34 @@ int main()
                 {
                     serial_action = true;
                     putText(frame, "left", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                    serial_num = 2;
                 }
-
-                if(line_axis_H_displacement < -input_line_data.line_axis_H_vibrate)
+                else if(line_axis_H_displacement < -input_line_data.line_axis_H_vibrate)
                 {
                     serial_action = true;
                     putText(frame, "right", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                    serial_num = 4;
+                }
+                else
+                {
+                    serial_action = true;
+                    putText(frame, "gogogo", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                    serial_num = 3;
                 }
               }
               else{//需要转弯
                   if(line_dist_R_displacement > 0)//右转
                   {
                       putText(frame, "->->->->->->->->->->->->", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                      serial_num = 5;
                   }
                   else{//左转
                       putText(frame, "<-<-<-<-<-<-<-<-<-<-<-<-", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                      serial_num = 1;
                   }
               }
-          }
-        }
+//          }
+//        }
 
         t = (cv::getTickCount() - t) / cv::getTickFrequency();
         double fps = 1.0 / t;
@@ -265,6 +274,7 @@ int main()
 
         cv::line(frame, cv::Point(input_line_data.line_axis_H), cv::Point(input_line_data.line_axis_H, frame.rows), cv::Scalar(0, 0, 0), 10);
         cv::imshow("frame", frame);
+        serial.serialWrite(serial_num);
         if(waitKey(1) == 'q')
         {
           break;

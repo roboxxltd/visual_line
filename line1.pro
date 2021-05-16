@@ -6,10 +6,14 @@ CONFIG -= app_bundle
 
 CONFIG -= qt
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    serial.cpp
 
 INCLUDEPATH += /usr/local/include \
                 /usr/local/include/opencv
                 /usr/local/include/opencv2
 
 LIBS += /usr/local/lib/libopencv_*
+
+HEADERS += \
+    serial.h
