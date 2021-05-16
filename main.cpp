@@ -64,13 +64,13 @@ void linePosition(cv::Mat *p_input_img, cv::Scalar *p_input_lowerb, cv::Scalar *
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
 
-//    cv::cvtColor(p_input_img_tmp, p_input_img_tmp, cv::COLOR_BGR2HSV_FULL);
-//    cv::inRange(p_input_img_tmp, *p_input_lowerb, *p_input_upperb, p_input_img_tmp);
-//    imshow("HSV", p_input_img_tmp);
-    cvtColor(p_input_img_tmp, p_input_img_tmp, COLOR_BGR2GRAY);
-    imshow("gray", p_input_img_tmp);
-    threshold(p_input_img_tmp, p_input_img_tmp, 103, 255, THRESH_BINARY_INV);
-    imshow("thre", p_input_img_tmp);
+    cv::cvtColor(p_input_img_tmp, p_input_img_tmp, cv::COLOR_BGR2HSV_FULL);
+    cv::inRange(p_input_img_tmp, *p_input_lowerb, *p_input_upperb, p_input_img_tmp);
+    imshow("HSV", p_input_img_tmp);
+//    cvtColor(p_input_img_tmp, p_input_img_tmp, COLOR_BGR2GRAY);
+//    imshow("gray", p_input_img_tmp);
+//    threshold(p_input_img_tmp, p_input_img_tmp, 103, 255, THRESH_BINARY_INV);
+//    imshow("thre", p_input_img_tmp);
     medianBlur(p_input_img_tmp, p_input_img_tmp, 3);
     cv::findContours(p_input_img_tmp, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
@@ -134,8 +134,8 @@ int main()
         80  //Fream read count, as same as triers
     };
     ColorRange input_color = {"black",
-                                 {0, 50, 0},
-                                 {360, 255, 90},
+                                 {0, 0, 0},
+                                 {360, 255, 100},
 
                                  /* Not used in lineFollow */
                                  0,
@@ -170,12 +170,12 @@ int main()
     cv::createTrackbar("line_main_V_e", slider_console_name, &input_line_data.line_main_V_e, stream_prop.frame_height, NULL);
     cv::createTrackbar("line_dist_V_s", slider_console_name, &input_line_data.line_dist_V_s, stream_prop.frame_height, NULL);
     cv::createTrackbar("line_dist_V_e", slider_console_name, &input_line_data.line_dist_V_e, stream_prop.frame_height, NULL);
-//    cv::createTrackbar("H_L", slider_console_name, &input_color.lowerb[0], 360, NULL);
-//    cv::createTrackbar("H_U", slider_console_name, &input_color.upperb[0], 360, NULL);
-//    cv::createTrackbar("S_L", slider_console_name, &input_color.lowerb[1], 255, NULL);
-//    cv::createTrackbar("S_U", slider_console_name, &input_color.upperb[1], 255, NULL);
-//    cv::createTrackbar("V_L", slider_console_name, &input_color.lowerb[2], 255, NULL);
-//    cv::createTrackbar("V_U", slider_console_name, &input_color.upperb[2], 255, NULL);
+    cv::createTrackbar("H_L", slider_console_name, &input_color.lowerb[0], 360, NULL);
+    cv::createTrackbar("H_U", slider_console_name, &input_color.upperb[0], 360, NULL);
+    cv::createTrackbar("S_L", slider_console_name, &input_color.lowerb[1], 255, NULL);
+    cv::createTrackbar("S_U", slider_console_name, &input_color.upperb[1], 255, NULL);
+    cv::createTrackbar("V_L", slider_console_name, &input_color.lowerb[2], 255, NULL);
+    cv::createTrackbar("V_U", slider_console_name, &input_color.upperb[2], 255, NULL);
     while(1)
     {
         capture.read(frame);
@@ -200,8 +200,11 @@ int main()
         frame_tmp[0] = frame(cv::Range(input_line_data.line_main_V_s, input_line_data.line_main_V_e), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
         linePosition(&frame_tmp[1], &input_lowerb_tmp, &input_upperb_tmp, &line_ctr[1], &area_max[1]);
         linePosition(&frame_tmp[0], &input_lowerb_tmp, &input_upperb_tmp, &line_ctr[0], &area_max[0]);
+        cv::line(frame, line_ctr[0], Point(line_ctr[1].x, line_ctr[1].y+input_line_data.line_dist_V_s), Scalar(0, 255, 255), 10);
         int line_dist_R_displacement = int(line_ctr[0].x - line_ctr[1].x);
-//        cout<<endl;
+        cout<<"line_ctr[0] = "<<line_ctr[0]<<endl;
+        cout<<"line_ctr[1] = "<<line_ctr[1]<<endl;
+        cout<<endl;
 //        cout<<"area_max[0] = "<<area_max[0]<<endl;
 //        cout<<"area_max[1] = "<<area_max[1]<<endl;
 //        cout<<"转弯 = "<<line_dist_R_displacement<<endl;
@@ -215,7 +218,7 @@ int main()
               crossing_flag = true;
               straight_flag = false;
               putText(frame, "crossing", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-              std::cout << "crossing" << ++input_line_data.line_mark_cnt << "->" << area_max[0] << std::endl;
+//              std::cout << "crossing" << ++input_line_data.line_mark_cnt << "->" << area_max[0] << std::endl;
             }
           }
           else
@@ -244,29 +247,29 @@ int main()
               else{//需要转弯
                   if(line_dist_R_displacement > 0)//右转
                   {
-                      putText(frame, "->->->->", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                      putText(frame, "->->->->->->->->->->->->", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
                   }
                   else{//左转
-                      putText(frame, "<-<-<-<-", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                      putText(frame, "<-<-<-<-<-<-<-<-<-<-<-<-", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
                   }
               }
           }
         }
+
         t = (cv::getTickCount() - t) / cv::getTickFrequency();
         double fps = 1.0 / t;
         char fps_string[10];
-
+//        cout<<"fps = "<<fps<<endl;
         std::sprintf(fps_string, "FPS:%.2f", fps);
-//        resize(frame, frame, Size(frame.cols*0.15, frame.rows*0.15));
         cv::putText(frame, fps_string, cv::Point(0, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+
         cv::line(frame, cv::Point(input_line_data.line_axis_H), cv::Point(input_line_data.line_axis_H, frame.rows), cv::Scalar(0, 0, 0), 10);
-
         cv::imshow("frame", frame);
-
-        if(waitKey(30) == 'q')
+        if(waitKey(1) == 'q')
         {
           break;
         }
+
     }
     capture.release();
     return 0;
