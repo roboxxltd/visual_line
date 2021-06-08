@@ -54,7 +54,7 @@ struct LineData
   int line_mark_cnt_limit;           //When crossing tag count eqaled, end the current function
 };
 
-void linePosition(cv::Mat *p_input_img, cv::Scalar *p_input_lowerb, cv::Scalar *p_input_upperb, cv::Point2f *p_line_ctr, double *p_area_max)
+void linePosition(cv::Mat *p_input_img, cv::Point2f *p_line_ctr, double *p_area_max)
 {
     double p_area_tmp;
     unsigned int area_max_tag = 0;
@@ -64,15 +64,7 @@ void linePosition(cv::Mat *p_input_img, cv::Scalar *p_input_lowerb, cv::Scalar *
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
 
-    cv::cvtColor(p_input_img_tmp, p_input_img_tmp, cv::COLOR_BGR2HSV_FULL);
-    cv::inRange(p_input_img_tmp, *p_input_lowerb, *p_input_upperb, p_input_img_tmp);
-    imshow("HSV", p_input_img_tmp);
-//    cvtColor(p_input_img_tmp, p_input_img_tmp, COLOR_BGR2GRAY);
-//    imshow("gray", p_input_img_tmp);
-//    threshold(p_input_img_tmp, p_input_img_tmp, 103, 255, THRESH_BINARY_INV);
-//    imshow("thre", p_input_img_tmp);
-    medianBlur(p_input_img_tmp, p_input_img_tmp, 3);
-    cv::findContours(p_input_img_tmp, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(p_input_img_tmp, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
     if(contours.size() > 0)
     {
@@ -94,23 +86,22 @@ void linePosition(cv::Mat *p_input_img, cv::Scalar *p_input_lowerb, cv::Scalar *
     {
       cv::Moments momentum = cv::moments(contours[area_max_tag], false);
       *p_line_ctr = cv::Point2f(float(momentum.m10 / momentum.m00), float(momentum.m01 / momentum.m00));
-      cv::drawContours(*p_input_img, contours, int(area_max_tag), cv::Scalar(255, 0, 0), 20, 8, hierarchy, 0, cv::Point());
-      cv::circle(*p_input_img, *p_line_ctr, 20, cv::Scalar(0, 255, 0), -1, 8, 0);
     }
-    contours.clear();
-    hierarchy.clear();
+
+//    contours.clear();
+//    hierarchy.clear();
 }
 
 int main()
 {
-//    VideoCapture capture(0);
+    VideoCapture capture(0);
     SerialPort serial;
-    VideoCapture capture("/home/xx/baiduwangpan/VID_20201024_213323.mp4");
+//    VideoCapture capture("/home/xx/baiduwangpan/VID_20201024_213323.mp4");
     Mat frame;
-    int Cross_num = 0;
+//    int Cross_num = 0;
     namedWindow("std", WINDOW_AUTOSIZE);
-    int thre_num = 107;
-    createTrackbar("thre = ", "std", &thre_num, 255, NULL);
+//    int thre_num = 107;
+//    createTrackbar("thre = ", "std", &thre_num, 255, NULL);
     StreamProp stream_prop = {
         0,           //Camera index
         cv::CAP_ANY, //API id
@@ -122,8 +113,8 @@ int main()
                                                  */
         5000,        //Camera v4l2 exposure value (78-10000)
         {
-            0,   //ROI rect strat x (left->rignt)
-            640, //ROI rect end x (left->rignt)
+            80,   //ROI rect strat x (left->rignt)
+            480, //ROI rect end x (left->rignt)
             0,   //ROI rect strat y (up->down)
             400  //ROI rect end y (up->down)
         },
@@ -154,133 +145,110 @@ int main()
           0,                                //Count the crossing tag on the line (not including turns)
           6                                 //When crossing tag count eqaled, end the current function
       };
-    int slider_threshold_limit = stream_prop.frame_width * stream_prop.frame_height;
-    std::string slider_console_name = std::string(input_color.color_name + " slider");
-    cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
-    cv::namedWindow(slider_console_name, cv::WINDOW_AUTOSIZE);
+//    int slider_threshold_limit = stream_prop.frame_width * stream_prop.frame_height;
+//    std::string slider_console_name = std::string(input_color.color_name + " slider");
+//    cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
+//    cv::namedWindow(slider_console_name, cv::WINDOW_AUTOSIZE);
 
-    cv::createTrackbar("line_area_threshold_min", slider_console_name, &input_line_data.area_threshold_min, slider_threshold_limit, NULL);
-    cv::createTrackbar("line_area_threshold_max", slider_console_name, &input_line_data.area_threshold_max, slider_threshold_limit, NULL);
-    cv::createTrackbar("line_width", slider_console_name, &input_line_data.line_axis_H, stream_prop.frame_width, NULL);
-    cv::createTrackbar("line_axis_H_vibrate", slider_console_name, &input_line_data.line_axis_H_vibrate, stream_prop.frame_width, NULL);
-    cv::createTrackbar("frame_threshold[0]", slider_console_name, &stream_prop.frame_threshold[0], stream_prop.frame_width, NULL);
-    cv::createTrackbar("frame_threshold[1]", slider_console_name, &stream_prop.frame_threshold[1], stream_prop.frame_width, NULL);
-    cv::createTrackbar("frame_threshold[2]", slider_console_name, &stream_prop.frame_threshold[2], stream_prop.frame_height, NULL);
-    cv::createTrackbar("frame_threshold[3]", slider_console_name, &stream_prop.frame_threshold[3], stream_prop.frame_height, NULL);
-    cv::createTrackbar("line_main_V_s", slider_console_name, &input_line_data.line_main_V_s, stream_prop.frame_height, NULL);
-    cv::createTrackbar("line_main_V_e", slider_console_name, &input_line_data.line_main_V_e, stream_prop.frame_height, NULL);
-    cv::createTrackbar("line_dist_V_s", slider_console_name, &input_line_data.line_dist_V_s, stream_prop.frame_height, NULL);
-    cv::createTrackbar("line_dist_V_e", slider_console_name, &input_line_data.line_dist_V_e, stream_prop.frame_height, NULL);
-    cv::createTrackbar("H_L", slider_console_name, &input_color.lowerb[0], 360, NULL);
-    cv::createTrackbar("H_U", slider_console_name, &input_color.upperb[0], 360, NULL);
-    cv::createTrackbar("S_L", slider_console_name, &input_color.lowerb[1], 255, NULL);
-    cv::createTrackbar("S_U", slider_console_name, &input_color.upperb[1], 255, NULL);
-    cv::createTrackbar("V_L", slider_console_name, &input_color.lowerb[2], 255, NULL);
-    cv::createTrackbar("V_U", slider_console_name, &input_color.upperb[2], 255, NULL);
+//    cv::createTrackbar("line_area_threshold_min", slider_console_name, &input_line_data.area_threshold_min, slider_threshold_limit, NULL);
+//    cv::createTrackbar("line_area_threshold_max", slider_console_name, &input_line_data.area_threshold_max, slider_threshold_limit, NULL);
+//    cv::createTrackbar("line_width", slider_console_name, &input_line_data.line_axis_H, stream_prop.frame_width, NULL);
+//    cv::createTrackbar("line_axis_H_vibrate", slider_console_name, &input_line_data.line_axis_H_vibrate, stream_prop.frame_width, NULL);
+//    cv::createTrackbar("frame_threshold[0]", slider_console_name, &stream_prop.frame_threshold[0], stream_prop.frame_width, NULL);
+//    cv::createTrackbar("frame_threshold[1]", slider_console_name, &stream_prop.frame_threshold[1], stream_prop.frame_width, NULL);
+//    cv::createTrackbar("frame_threshold[2]", slider_console_name, &stream_prop.frame_threshold[2], stream_prop.frame_height, NULL);
+//    cv::createTrackbar("frame_threshold[3]", slider_console_name, &stream_prop.frame_threshold[3], stream_prop.frame_height, NULL);
+//    cv::createTrackbar("line_main_V_s", slider_console_name, &input_line_data.line_main_V_s, stream_prop.frame_height, NULL);
+//    cv::createTrackbar("line_main_V_e", slider_console_name, &input_line_data.line_main_V_e, stream_prop.frame_height, NULL);
+//    cv::createTrackbar("line_dist_V_s", slider_console_name, &input_line_data.line_dist_V_s, stream_prop.frame_height, NULL);
+//    cv::createTrackbar("line_dist_V_e", slider_console_name, &input_line_data.line_dist_V_e, stream_prop.frame_height, NULL);
+//    cv::createTrackbar("H_L", slider_console_name, &input_color.lowerb[0], 360, NULL);
+//    cv::createTrackbar("H_U", slider_console_name, &input_color.upperb[0], 360, NULL);
+//    cv::createTrackbar("S_L", slider_console_name, &input_color.lowerb[1], 255, NULL);
+//    cv::createTrackbar("S_U", slider_console_name, &input_color.upperb[1], 255, NULL);
+//    cv::createTrackbar("V_L", slider_console_name, &input_color.lowerb[2], 255, NULL);
+//    cv::createTrackbar("V_U", slider_console_name, &input_color.upperb[2], 255, NULL);
     static int16_t serial_num = 0;
-    while(1)
+    cv::Mat frame_tmp[2];
+    Mat mark;
+    while(capture.read(frame))
     {
-        capture.read(frame);
         double t = cv::getTickCount();
         if(frame.empty())
         {
           continue;
         }
-        bool crossing_flag = false;
-        bool straight_flag = false;
-        bool serial_action = false;
 
 
-        cv::Mat frame_tmp[2];
         cv::Scalar input_lowerb_tmp = cv::Scalar(input_color.lowerb[0], input_color.lowerb[1], input_color.lowerb[2]);
         cv::Scalar input_upperb_tmp = cv::Scalar(input_color.upperb[0], input_color.upperb[1], input_color.upperb[2]);
-        cv::Point2f line_ctr[2];
+
         double area_max[2];
         resize(frame, frame, Size(640, 400));
-        frame = frame(cv::Range(stream_prop.frame_threshold[2], stream_prop.frame_threshold[3]), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
-        frame_tmp[1] = frame(cv::Range(input_line_data.line_dist_V_s, input_line_data.line_dist_V_e), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
-        frame_tmp[0] = frame(cv::Range(input_line_data.line_main_V_s, input_line_data.line_main_V_e), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
-        linePosition(&frame_tmp[1], &input_lowerb_tmp, &input_upperb_tmp, &line_ctr[1], &area_max[1]);
-        linePosition(&frame_tmp[0], &input_lowerb_tmp, &input_upperb_tmp, &line_ctr[0], &area_max[0]);
-        cv::line(frame, line_ctr[0], Point(line_ctr[1].x, line_ctr[1].y+input_line_data.line_dist_V_s), Scalar(0, 255, 255), 10);
+        frame = frame(Rect(80, 0, 480, 400));
+        cv::Point2f line_ctr[2] = {Point(0, 0), Point(frame.cols/2, frame.rows)};
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2HSV_FULL);
+        cv::inRange(frame, input_lowerb_tmp, input_upperb_tmp, mark);
+//        imshow("HSV", mark);
+//        frame_tmp[0] = frame(Rect(0, 100, 640, 200));
+//        frame_tmp[1] = frame(Rect(0, 200, 640, 300));
+//        frame_tmp[1] = mark(cv::Range(input_line_data.line_dist_V_s, input_line_data.line_dist_V_e), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
+        frame_tmp[0] = mark(cv::Range(input_line_data.line_main_V_s, input_line_data.line_main_V_e), cv::Range(stream_prop.frame_threshold[0], stream_prop.frame_threshold[1]));
+//        linePosition(&frame_tmp[1], &line_ctr[1], &area_max[1]);
+        linePosition(&frame_tmp[0], &line_ctr[0], &area_max[0]);
+
+//        cv::line(frame, line_ctr[0], Point(line_ctr[1].x, line_ctr[1].y+input_line_data.line_dist_V_s), Scalar(0, 255, 255), 10);
         int line_dist_R_displacement = int(line_ctr[0].x - line_ctr[1].x);
-        cout<<"line_ctr[0] = "<<line_ctr[0]<<endl;
-        cout<<"line_ctr[1] = "<<line_ctr[1]<<endl;
-        cout<<endl;
-//        cout<<"area_max[0] = "<<area_max[0]<<endl;
-//        cout<<"area_max[1] = "<<area_max[1]<<endl;
-//        cout<<"转弯 = "<<line_dist_R_displacement<<endl;
 
-//        if((area_max[0] < area_max[1] ? area_max[0] : area_max[1])  > input_line_data.area_threshold_min)
-//        {
-//          if(area_max[0] > input_line_data.area_threshold_max && abs(line_dist_R_displacement) < 50)
-//          {
-//            if(crossing_flag == false)
-//            {
-//              crossing_flag = true;
-//              straight_flag = false;
-//              putText(frame, "crossing", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-////              std::cout << "crossing" << ++input_line_data.line_mark_cnt << "->" << area_max[0] << std::endl;
-//            }
-//          }
-//          else
-//          {
-              crossing_flag = false;
-              straight_flag = true;
-              putText(frame, "straight", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-              if(abs(line_dist_R_displacement) < 60)//不偏转
+          putText(frame, "straight", Point(frame.cols/2, frame.rows/2), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+          if(abs(line_dist_R_displacement) < 30)//不偏转
+          {
+            int line_axis_H_displacement = int(line_ctr[1].x - input_line_data.line_axis_H);
+    //                cout<<"车离黑线偏移 = "<<line_axis_H_displacement<<endl;
+            if(line_axis_H_displacement > input_line_data.line_axis_H_vibrate)
+            {
+    //                    serial_action = true;
+                putText(frame, "left", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                serial_num = 2;
+            }
+            else if(line_axis_H_displacement < -input_line_data.line_axis_H_vibrate)
+            {
+    //                    serial_action = true;
+                putText(frame, "right", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                serial_num = 4;
+            }
+            else
+            {
+    //                    serial_action = true;
+                putText(frame, "gogogo", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                serial_num = 3;
+            }
+          }
+          else{//需要转弯
+              if(line_dist_R_displacement > 0)//右转
               {
-                int line_axis_H_displacement = int(line_ctr[1].x - input_line_data.line_axis_H);
-//                cout<<"车离黑线偏移 = "<<line_axis_H_displacement<<endl;
-                if(line_axis_H_displacement > input_line_data.line_axis_H_vibrate)
-                {
-                    serial_action = true;
-                    putText(frame, "left", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-                    serial_num = 2;
-                }
-                else if(line_axis_H_displacement < -input_line_data.line_axis_H_vibrate)
-                {
-                    serial_action = true;
-                    putText(frame, "right", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-                    serial_num = 4;
-                }
-                else
-                {
-                    serial_action = true;
-                    putText(frame, "gogogo", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-                    serial_num = 3;
-                }
+                  putText(frame, ">>>>>>>>>>>>>", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                  serial_num = 5;
               }
-              else{//需要转弯
-                  if(line_dist_R_displacement > 0)//右转
-                  {
-                      putText(frame, "->->->->->->->->->->->->", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-                      serial_num = 5;
-                  }
-                  else{//左转
-                      putText(frame, "<-<-<-<-<-<-<-<-<-<-<-<-", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
-                      serial_num = 1;
-                  }
+              else{//左转
+                  putText(frame, "<<<<<<<<<<<<<", Point(frame.cols/2, frame.rows/2+20), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,0,0),2,8);
+                  serial_num = 1;
               }
-//          }
-//        }
+          }
 
+//        cv::line(frame, cv::Point(input_line_data.line_axis_H), cv::Point(input_line_data.line_axis_H, frame.rows), cv::Scalar(0, 0, 0), 10);
+//        cv::imshow("frame", frame);
+        serial.serialWrite(serial_num);
+//        if(waitKey(1) == 'q')
+//        {
+//          break;
+//        }
         t = (cv::getTickCount() - t) / cv::getTickFrequency();
         double fps = 1.0 / t;
-        char fps_string[10];
-//        cout<<"fps = "<<fps<<endl;
-        std::sprintf(fps_string, "FPS:%.2f", fps);
-        cv::putText(frame, fps_string, cv::Point(0, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-
-        cv::line(frame, cv::Point(input_line_data.line_axis_H), cv::Point(input_line_data.line_axis_H, frame.rows), cv::Scalar(0, 0, 0), 10);
-        cv::imshow("frame", frame);
-        serial.serialWrite(serial_num);
-        if(waitKey(1) == 'q')
-        {
-          break;
-        }
-
+//        char fps_string[10];
+        cout<<"fps = "<<fps<<endl;
     }
     capture.release();
     return 0;
 }
+

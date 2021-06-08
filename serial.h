@@ -43,7 +43,7 @@ class SerialPort
 public:
   //串口标志量
   static int fd;
-  static unsigned char g_write_buf[WRITE_BUFF_LENGTH];
+  static unsigned char g_write_buf[3];
   static unsigned char g_CRC_buf[CRC_BUFF_LENGTH];
   static unsigned char g_rec_buf[REC_BUFF_LENGTH];
 
@@ -56,15 +56,12 @@ public:
   SerialPort();
   ~SerialPort();
 
-  static uint8_t Checksum_CRC8(unsigned char *buf, uint16_t len);
   //自定义串口发送
   static void serialWrite(int temp);
 
   //接收并处理串口数据
   static void receiveData(int arr[REC_BUFF_LENGTH]);
 
-  static void getDataForCRC(int data_type, int is_shooting, int _yaw, int16_t yaw, int _pitch, int16_t pitch, int16_t depth);
-  static void getDataForSend(int data_type, int is_shooting, int _yaw, int16_t yaw, int _pitch, int16_t pitch, int16_t depth, uint8_t CRC);
 };
 
 const unsigned char CRC8Tab[300] =

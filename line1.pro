@@ -12,7 +12,8 @@ SOURCES += main.cpp \
 INCLUDEPATH += /usr/local/include \
                 /usr/local/include/opencv
                 /usr/local/include/opencv2
-
+QMAKE_CXXFLAGS += \
+    -O3
 LIBS += /usr/local/lib/libopencv_*
 
 HEADERS += \
